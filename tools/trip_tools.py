@@ -1,6 +1,13 @@
 import os
+import re
+import sys
+import time
 import requests 
+# For getting crewai supported sqlite3
+import pysqlite3
+sys.modules['sqlite3'] = pysqlite3
 from crewai.tools import tool
+
 from dotenv import load_dotenv
 from amadeus import Location, Client
 from langchain_community.tools import DuckDuckGoSearchRun
@@ -20,8 +27,24 @@ headers = {
 "x-rapidapi-key": os.environ.get("rapidapi_key"),
 "x-rapidapi-host": os.environ.get("rapidapi_host")
 }
+
+def convert_to_hours(duration: str) -> float:
+    # Match ISO 8601 duration pattern (e.g. PT30H, PT7H40M, PT1H20M10S)
+    match = re.match(r"^P?T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$", duration)
+    
+    if match:
+        # Extract hours, minutes, and seconds, defaulting to 0 if not found
+        hours = int(match.group(1) or 0)
+        minutes = int(match.group(2) or 0)
+        seconds = int(match.group(3) or 0)
+        
+        # Convert everything to hours
+        total_hours = hours + (minutes / 60) + (seconds / 3600)
+        return round(total_hours)
+    else:
+        raise ValueError("Invalid ISO 8601 duration format")
  
-@tool("flight search")
+# @tool("flight search")
 def search_flights(source : str, destination: str, departureDate: str , numOfPerson: str):
   """
   Search flights between on source and destination using Amadeus API.
@@ -34,6 +57,7 @@ def search_flights(source : str, destination: str, departureDate: str , numOfPer
 
   Returns : list of dict containing flight_name, num_via_stops, price.
   """
+  start_time = time.time()
   try:
     if len(source) < 3 or len(destination) < 3:
         return "Source and destination must be at least 3 characters."
@@ -63,7 +87,7 @@ def search_flights(source : str, destination: str, departureDate: str , numOfPer
     num_of_flights = min(10, len(response.data))
     filtered_flights = response.data[:num_of_flights]
     cleaned = []
-
+    
     for offer in filtered_flights:
         try:
             price_info = offer.get("price", {})
@@ -74,19 +98,22 @@ def search_flights(source : str, destination: str, departureDate: str , numOfPer
             
             segment_list = []
             total_stops = max(len(segments) - 1, 0)
-
+            
             for seg in segments:
+                from_airport_code = amadeus.reference_data.locations.get(keyword=seg["departure"]["iataCode"], subType=Location.ANY).data
+                to_airport_code = amadeus.reference_data.locations.get(keyword=seg["arrival"]["iataCode"], subType=Location.ANY).data
+                
                 segment_list.append({
-                    "from": seg["departure"]["iataCode"],
-                    "to": seg["arrival"]["iataCode"],
-                    "departure": seg["departure"]["at"],
-                    "arrival": seg["arrival"]["at"],
+                    "from_airport": from_airport_code[0].get('detailedName') if from_airport_code else seg["departure"]["iataCode"],
+                    "to_airport": to_airport_code[0].get('detailedName') if to_airport_code else seg["arrival"]["iataCode"],
+                    "departure_time": seg["departure"]["at"],
+                    "arrival_time": seg["arrival"]["at"],
                     "flight_number": f'{seg["carrierCode"]}{seg["number"]}',
                     "carrier": seg["carrierCode"],
-                    "duration": seg["duration"],
+                    "duration_hour": convert_to_hours(seg["duration"]),
                     "stops": seg.get("numberOfStops", 0)
                 })
-
+            
             # baggage info (only first traveler & segment)
             fare_segments = offer.get("travelerPricings", [])[0].get("fareDetailsBySegment", [])
             cabin_class = fare_segments[0].get("cabin", "ECONOMY") if fare_segments else "ECONOMY"
@@ -97,9 +124,9 @@ def search_flights(source : str, destination: str, departureDate: str , numOfPer
                 "id": offer["id"],
                 "price": price_info.get("grandTotal"),
                 "currency": price_info.get("currency"),
-                "airline": airline_code,
+                "airline": amadeus.reference_data.airlines.get(airlineCodes=airline_code).data[0]["businessName"] ,
                 "available_seats": seats,
-                "duration": itinerary.get("duration"),
+                "total_duration_hour": convert_to_hours(itinerary.get("duration")),
                 "stops": total_stops,
                 "segments": segment_list,
                 "cabin_class": cabin_class,
@@ -119,7 +146,8 @@ def search_flights(source : str, destination: str, departureDate: str , numOfPer
     }
     print("getting exception", error_result)
     return str(error_result)
-    
+
+  print(f"Total time taken to search and proceed flight search is {time.time() - start_time} seconds")
   return cleaned
  
 @tool("hotel search")
