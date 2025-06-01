@@ -5,9 +5,9 @@ class TripTasks:
 
     def flight_checking_task(self, agent, source, destination, departureDateFromSource, numOfPerson, budget):
         return Task(
-            description=(f"Search for flights between {source} and {destination} only on {departureDateFromSource} for {numOfPerson} passangers under the budget of {budget} USD."),
+            description=(f"Search for flights between {source} and {destination} only on {departureDateFromSource} for {numOfPerson} passangers under the budget of {budget} USD in minimum duration"),
             expected_output=(
-                "List of flights deatils in json format with flight name, number of via stops, and price."
+                "List of flights deatils in json format with flight name, number of via stops, price and others"
             ),
             agent=agent,
             timeout = 30
