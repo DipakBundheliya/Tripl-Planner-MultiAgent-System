@@ -3,9 +3,9 @@ from textwrap import dedent
 
 class TripTasks:
 
-    def flight_checking_task(self, agent, source, destination, departureDate, departureDateFromDest, numOfPerson, budget):
+    def flight_checking_task(self, agent, source, destination, departureDateFromSource, numOfPerson, budget):
         return Task(
-            description=("Search for flights between {source} and {destination} only on {departureDate} for {numOfPerson} passangers under the total budget of {budget} USD."),
+            description=(f"Search for flights between {source} and {destination} only on {departureDateFromSource} for {numOfPerson} passangers under the budget of {budget} USD."),
             expected_output=(
                 "List of flights deatils in json format with flight name, number of via stops, and price."
             ),

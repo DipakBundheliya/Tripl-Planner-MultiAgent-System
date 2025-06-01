@@ -1,7 +1,7 @@
 import os
+from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from crewai import Agent, Task, Crew
-from dotenv import load_dotenv
 from tools.trip_tools import search_activities, search_flights, search_hotels
 
 load_dotenv()
@@ -24,7 +24,7 @@ class TripAgents:
                 verbose=True
             )
 
-    def hotel_search_agent(Self):
+    def hotel_search_agent(self):
         return Agent(
                 llm=llm,
                 role = "Hotel search expert",

@@ -1,11 +1,27 @@
 import os
 import requests 
+from crewai.tools import tool
 from dotenv import load_dotenv
 from amadeus import Location, Client
 from langchain_community.tools import DuckDuckGoSearchRun
 
 load_dotenv()
+
+# For flight search tool
+amadeus = Client(
+    client_id = os.environ.get("amadeus_client_id"),
+    client_secret=os.environ.get("amadeus_client_secret")
+)
+
+# For hotel search tool
+destinationSearchUrl = "https://booking-com15.p.rapidapi.com/api/v1/hotels/searchDestination"
+hotelSearchUrl = "https://booking-com15.p.rapidapi.com/api/v1/hotels/searchHotels"
+headers = {
+"x-rapidapi-key": os.environ.get("rapidapi_key"),
+"x-rapidapi-host": os.environ.get("rapidapi_host")
+}
  
+@tool("flight search")
 def search_flights(source : str, destination: str, departureDate: str , numOfPerson: str):
   """
   Search flights between on source and destination using Amadeus API.
@@ -22,10 +38,6 @@ def search_flights(source : str, destination: str, departureDate: str , numOfPer
     if len(source) < 3 or len(destination) < 3:
         return "Source and destination must be at least 3 characters."
 
-    amadeus = Client(
-        client_id = os.environ.get("amadeus_client_id"),
-        client_secret=os.environ.get("amadeus_client_secret")
-    )
     sourceResponse = amadeus.reference_data.locations.get(
         keyword=source,
         subType=Location.ANY
@@ -48,7 +60,8 @@ def search_flights(source : str, destination: str, departureDate: str , numOfPer
  
     print(f"length of flights are {len(response.data)}")
 
-    filtered_flights = response.data[:5]
+    num_of_flights = min(10, len(response.data))
+    filtered_flights = response.data[:num_of_flights]
     cleaned = []
 
     for offer in filtered_flights:
@@ -109,6 +122,7 @@ def search_flights(source : str, destination: str, departureDate: str , numOfPer
     
   return cleaned
  
+@tool("hotel search")
 def search_hotels(cityName: str, arrival_date: str, departure_date: str, adults: str):
   """
   Search Hotels in cityName using Rapid API.
@@ -118,14 +132,6 @@ def search_hotels(cityName: str, arrival_date: str, departure_date: str, adults:
 
   Returns : list of dict containing hotels information like name, price, cuurency and others. 
   """
-
-
-  destinationSearchUrl = "https://booking-com15.p.rapidapi.com/api/v1/hotels/searchDestination"
-  hotelSearchUrl = "https://booking-com15.p.rapidapi.com/api/v1/hotels/searchHotels"
-  headers = {
-    "x-rapidapi-key": os.environ.get("rapidapi_key"),
-    "x-rapidapi-host": os.environ.get("rapidapi_host")
-  }
 
   querystring = {"query":cityName}
 
@@ -171,7 +177,8 @@ def search_hotels(cityName: str, arrival_date: str, departure_date: str, adults:
           print(f"Hotel parse error: {e}")
 
   return cleaned
- 
+
+@tool("activity plan search")
 def search_activities(num_days : int, destination: str, arrivalDate: str, departureDate: str):
   """
   Search flights between on source and destination using Amadeus API.
@@ -186,3 +193,9 @@ def search_activities(num_days : int, destination: str, arrivalDate: str, depart
   """
   search_prompt = f"Best {num_days}-day travel itinery or local tourist activities in {destination}"
   return DuckDuckGoSearchRun().run(search_prompt)
+
+
+if __name__ == "__main__":
+   # check flight search tool
+   response = search_flights("Goa", "London", "2025-06-10", "1" )
+   print(response)
