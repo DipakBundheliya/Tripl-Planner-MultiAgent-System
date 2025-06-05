@@ -48,13 +48,13 @@ class TripCrew:
             departureDateFromDest= self.departureDateFromDest,
             numOfPerson= self.numOfPerson,
             budget= self.budget,
-            currency = self.currency ,
+            currency = self.currency,
             flight_task = flight_task
         )
 
         crew_one = Crew(
-            agents= [flight_searcher_agent],
-            tasks= [flight_task],
+            agents= [flight_searcher_agent, hotel_searcher_agent],
+            tasks= [flight_task, hotel_task],
             verbose=True
         )
 

@@ -5,15 +5,14 @@ import os
 from dotenv import load_dotenv
 from crewai import Agent, LLM
 from langchain_groq import ChatGroq
-from tools.trip_tools import search_activities, search_flights, search_hotels
+from tools.trip_tools import search_activities, search_flights, search_hotels_dummy
  
 load_dotenv(override=True)
 class TripAgents:
 
     def __init__(self): 
         self.llm = LLM(model='groq/llama-3.3-70b-versatile')
-        print("LLM initialized successfully:", self.llm)
-        print("api key:", os.environ.get("GROQ_API_KEY"))
+        print("LLM initialized successfully:", self.llm) 
 
         try:
             test_response = self.llm.call("Hello, how are you?")
@@ -38,7 +37,7 @@ class TripAgents:
                 role = "Hotel search expert",
                 goal = "Find suitable hotels for the user's trip in given city based on given arrival dates and departure date for each flight",
                 backstory ="You are a hotel booking expert who knows how to find the best accomodations that match traveler's needs, budget, and location preferences using hotel search tool. You work well with arrival dates and departure dates provided by the flight search expert",
-                tools = [search_hotels],
+                tools = [search_hotels_dummy],
                 allow_delegation=False,
                 verbose=True
             )

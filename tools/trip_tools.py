@@ -151,8 +151,8 @@ def search_flights(source : str, destination: str, departureDate: str , numOfPer
   print(f"Total time taken to search and proceed flight search is {time.time() - start_time} seconds")
   return cleaned
  
-@tool("hotel search")
-def search_hotels(cityName: str, arrival_date: str, departure_date: str, adults: str):
+# @tool("hotel search")
+def search_hotels_origional(cityName: str, arrival_date: str, departure_date: str, adults: str):
     """
     Search for hotels in a specified city using the Rapid API.
     Parameters:
@@ -228,6 +228,67 @@ def search_hotels(cityName: str, arrival_date: str, departure_date: str, adults:
 
     print(f"Total time taken to search and proceed flight search is {time.time() - start_time} seconds")
     return cleaned
+
+@tool("hotel search")
+def search_hotels_dummy(cityName: str, arrival_date: str, departure_date: str, adults: str):
+    """
+    Dummy function that returns static hotel data instead of calling the API.
+    """
+    import time
+    start_time = time.time()
+
+    print(f"Simulating hotel search for city: {cityName} from {arrival_date} to {departure_date} for {adults} adults.")
+
+    dummy_hotels = [
+        {
+            "name": "Grand Palace Hotel",
+            "hotel_price": 125.50,
+            "currency": "USD",
+            "rating": 8.6,
+            "rating_text": "Excellent",
+            "review_count": 2345,
+            "stars": 5,
+            "photo": "https://example.com/photo1.jpg",
+            "location": {
+                "latitude": 28.6139,
+                "longitude": 77.2090
+            },
+            "is_preferred": True
+        },
+        {
+            "name": "City Inn Express",
+            "hotel_price": 78.25,
+            "currency": "USD",
+            "rating": 7.2,
+            "rating_text": "Good",
+            "review_count": 986,
+            "stars": 3,
+            "photo": "https://example.com/photo2.jpg",
+            "location": {
+                "latitude": 28.6448,
+                "longitude": 77.2167
+            },
+            "is_preferred": False
+        },
+        {
+            "name": "Budget Stay Lodge",
+            "hotel_price": 49.99,
+            "currency": "USD",
+            "rating": 6.1,
+            "rating_text": "Fair",
+            "review_count": 403,
+            "stars": 2,
+            "photo": "https://example.com/photo3.jpg",
+            "location": {
+                "latitude": 28.5672,
+                "longitude": 77.2100
+            },
+            "is_preferred": False
+        }
+    ]
+
+    print(f"Returning dummy hotel data. Total time: {time.time() - start_time:.2f} seconds")
+    return dummy_hotels
 
 @tool("activity plan search")
 def search_activities(num_days : int, destination: str, arrivalDate: str, departureDate: str):
