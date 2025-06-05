@@ -7,13 +7,11 @@ import requests
 import pysqlite3
 sys.modules['sqlite3'] = pysqlite3
 from crewai.tools import tool
-
-from dotenv import load_dotenv
+from datetime import datetime, timedelta
+ 
 from amadeus import Location, Client
 from langchain_community.tools import DuckDuckGoSearchRun
-
-load_dotenv()
-
+ 
 # For flight search tool
 amadeus = Client(
     client_id = os.environ.get("amadeus_client_id"),
@@ -44,7 +42,7 @@ def convert_to_hours(duration: str) -> float:
     else:
         raise ValueError("Invalid ISO 8601 duration format")
  
-# @tool("flight search")
+@tool("flight search")
 def search_flights(source : str, destination: str, departureDate: str , numOfPerson: str):
   """
   Search flights between on source and destination using Amadeus API.
@@ -55,9 +53,10 @@ def search_flights(source : str, destination: str, departureDate: str , numOfPer
   - departureDate (str): Date in format YYYY-MM-DD.
   - numOfPerson (str): Number of Adult passangers.
 
-  Returns : list of dict containing flight_name, num_via_stops, price.
+  Returns : list of dict containing flight_name, num_via_stops, price and other details.
   """
   start_time = time.time()
+  print("entering")
   try:
     if len(source) < 3 or len(destination) < 3:
         return "Source and destination must be at least 3 characters."
@@ -82,9 +81,9 @@ def search_flights(source : str, destination: str, departureDate: str , numOfPer
         adults=numOfPerson
     )
  
-    print(f"length of flights are {len(response.data)}")
+    print(f"length of getting flights are {len(response.data)}")
 
-    num_of_flights = min(10, len(response.data))
+    num_of_flights = min(2, len(response.data))
     filtered_flights = response.data[:num_of_flights]
     cleaned = []
     
@@ -100,12 +99,14 @@ def search_flights(source : str, destination: str, departureDate: str , numOfPer
             total_stops = max(len(segments) - 1, 0)
             
             for seg in segments:
-                from_airport_code = amadeus.reference_data.locations.get(keyword=seg["departure"]["iataCode"], subType=Location.ANY).data
-                to_airport_code = amadeus.reference_data.locations.get(keyword=seg["arrival"]["iataCode"], subType=Location.ANY).data
+                # from_airport_code = amadeus.reference_data.locations.get(keyword=seg["departure"]["iataCode"], subType=Location.ANY).data
+                # to_airport_code = amadeus.reference_data.locations.get(keyword=seg["arrival"]["iataCode"], subType=Location.ANY).data
                 
                 segment_list.append({
-                    "from_airport": from_airport_code[0].get('detailedName') if from_airport_code else seg["departure"]["iataCode"],
-                    "to_airport": to_airport_code[0].get('detailedName') if to_airport_code else seg["arrival"]["iataCode"],
+                    # "from_airport": from_airport_code[0].get('detailedName') if from_airport_code else seg["departure"]["iataCode"],
+                    # "to_airport": to_airport_code[0].get('detailedName') if to_airport_code else seg["arrival"]["iataCode"],
+                    "from_airport" : seg["departure"]["iataCode"],
+                    "to_airport" : seg["arrival"]["iataCode"],
                     "departure_time": seg["departure"]["at"],
                     "arrival_time": seg["arrival"]["at"],
                     "flight_number": f'{seg["carrierCode"]}{seg["number"]}',
@@ -122,7 +123,7 @@ def search_flights(source : str, destination: str, departureDate: str , numOfPer
 
             cleaned.append({
                 "id": offer["id"],
-                "price": price_info.get("grandTotal"),
+                "flight_price": price_info.get("grandTotal"),
                 "currency": price_info.get("currency"),
                 "airline": amadeus.reference_data.airlines.get(airlineCodes=airline_code).data[0]["businessName"] ,
                 "available_seats": seats,
@@ -152,78 +153,104 @@ def search_flights(source : str, destination: str, departureDate: str , numOfPer
  
 @tool("hotel search")
 def search_hotels(cityName: str, arrival_date: str, departure_date: str, adults: str):
-  """
-  Search Hotels in cityName using Rapid API.
+    """
+    Search for hotels in a specified city using the Rapid API.
+    Parameters:
+        cityName (str): The name of the city to search hotels in (e.g., "Delhi", "New York").
+        arrival_date (str): The check-in date in 'YYYY-MM-DD' format.
+        departure_date (str): The check-out date in 'YYYY-MM-DD' format.
+        adults (str): The number of adults staying.
+    Returns:
+        list of dict: A list of dictionaries, each containing hotel information such as name, hotel price, and others
+    Notes:
+        Returns an empty list if no hotels are found for the specified city.
+    """ 
+    start_time = time.time()
+    querystring = {"query":cityName}
 
-  parameters:
-  - cityName (str): The city name, e.g., "Delhi", "New York"
+    response = requests.get(destinationSearchUrl, headers=headers, params=querystring)
+    response_json = response.json()
 
-  Returns : list of dict containing hotels information like name, price, cuurency and others. 
-  """
+    print("destination id is", response_json)
+    if "message" in response_json:
+        return {"status": "error", "message": response_json["message"]}
+    
+    dest_id_list = [location['dest_id'] for location in response_json.get('data', []) if location.get("search_type") == 'city']
 
-  querystring = {"query":cityName}
+    if not dest_id_list:
+        return []
 
-  response = requests.get(destinationSearchUrl, headers=headers, params=querystring)
-  print(response.json())
-  dest_id_list = [location['dest_id'] for location in response.json()['data'] if location["search_type"] == 'city']
-  
-  if not dest_id_list:
-      return []
+    dest_id = dest_id_list[0]
 
-  dest_id = dest_id_list[0] 
+    querystring = {"dest_id": dest_id, "search_type": "CITY", "arrival_date": arrival_date, "departure_date": departure_date, "adults": adults,
+                   "children_age": "0,17", "room_qty": "1", "page_number": "1", "units": "metric", "temperature_unit": "c", "languagecode": "en-us", }
+    response = requests.get(hotelSearchUrl, headers=headers, params=querystring)
 
-  querystring = {"dest_id":dest_id,"search_type":"CITY","arrival_date":arrival_date,"departure_date":departure_date,"adults":adults,
-                "children_age":"0,17","room_qty":"1","page_number":"1","units":"metric","temperature_unit":"c","languagecode":"en-us",}
-  response = requests.get(hotelSearchUrl, headers=headers, params=querystring)
+    raw_response = response.json()
 
-  raw_response = response.json()
-  
-  hotels_data = raw_response.get('data', {}).get('hotels', [])
-  cleaned = []
+    if "message" in raw_response:
+       return {"status": "error", "message": raw_response["message"]}
+    print("hotel search response is", raw_response)
 
-  for hotel in hotels_data:
-      try:
-          prop = hotel.get('property', {})
-          price_info = prop.get('priceBreakdown', {}).get('grossPrice', {})
+    hotels_data = raw_response.get('data', {}).get('hotels', [])
+    if not hotels_data:
+        return []
+    
+    # Clean the hotel data
+    cleaned = []
 
-          cleaned.append({
-              "name": prop.get("name"),
-              "price": round(price_info.get("value", 0), 2),
-              "currency": price_info.get("currency", "USD"),
-              "rating": prop.get("reviewScore"),
-              "rating_text": prop.get("reviewScoreWord"),
-              "review_count": prop.get("reviewCount"),
-              "stars": prop.get("propertyClass"),
-              "photo": prop.get("photoUrls", [None])[0],
-              "location": {
-                  "latitude": prop.get("latitude"),
-                  "longitude": prop.get("longitude")
-              },
-              "is_preferred": prop.get("isPreferred", False)
-          })
-      except Exception as e:
-          print(f"Hotel parse error: {e}")
+    print(f"length of getting hotels are {len(hotels_data)}")
+    min_num_hotels = min(len(hotels_data), 5)
+    hotels_data = hotels_data[:min_num_hotels]
 
-  return cleaned
+    for hotel in hotels_data:
+        try:
+            prop = hotel.get('property', {})
+            price_info = prop.get('priceBreakdown', {}).get('grossPrice', {})
+
+            cleaned.append({
+                "name": prop.get("name"),
+                "hotel_price": round(price_info.get("value", 0), 2),
+                "currency": price_info.get("currency", "USD"),
+                "rating": prop.get("reviewScore"),
+                "rating_text": prop.get("reviewScoreWord"),
+                "review_count": prop.get("reviewCount"),
+                "stars": prop.get("propertyClass"),
+                "photo": prop.get("photoUrls", [None])[0],
+                "location": {
+                    "latitude": prop.get("latitude"),
+                    "longitude": prop.get("longitude")
+                },
+                "is_preferred": prop.get("isPreferred", False)
+            })
+        except Exception as e:
+            print(f"Hotel parse error: {e}")
+
+    print(f"Total time taken to search and proceed flight search is {time.time() - start_time} seconds")
+    return cleaned
 
 @tool("activity plan search")
 def search_activities(num_days : int, destination: str, arrivalDate: str, departureDate: str):
-  """
-  Search flights between on source and destination using Amadeus API.
+    """
+    Search for activities or travel itinerary in a destination city.
 
-  parameters:
-  - num_days: Number of days for which user wants to do activities
-  - destination (str): The city name, e.g., "London", "Bangkok".
-  - arrivalDate (str): The date of day after that day when user will arrive at his destination
-  - departureDate (str): The date of day before that date when user will leave his destination
+    parameters:
+    - num_days: Number of days for which user wants to do activities
+    - destination (str): The city name, e.g., "London", "Bangkok".
+    - arrivalDate (str): The date when user will arrive at the destination
+    - departureDate (str): The date when user will leave the destination
 
-  Returns : list of dict containing activities details.
-  """
-  search_prompt = f"Best {num_days}-day travel itinery or local tourist activities in {destination}"
-  return DuckDuckGoSearchRun().run(search_prompt)
-
+    Returns : list of dict containing activities details.
+    """
+    search_prompt = f"Best {num_days}-day travel itinerary or local tourist activities in {destination} between {arrivalDate} and {departureDate}"
+    return DuckDuckGoSearchRun().run(search_prompt)
 
 if __name__ == "__main__":
+   
    # check flight search tool
-   response = search_flights("Goa", "London", "2025-06-10", "1" )
+#    response = search_flights("Goa", "London", (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d"), "1" )
+   
+   #  check hotel details
+   response = search_hotels("London", datetime.now().strftime("%Y-%m-%d"), (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d"), "1")
+#    breakpoint()
    print(response)

@@ -3,25 +3,40 @@ from textwrap import dedent
 
 class TripTasks:
 
-    def flight_checking_task(self, agent, source, destination, departureDateFromSource, numOfPerson, budget):
+    def flight_checking_task(self, agent, source, destination, departureDateFromSource, numOfPerson, budget, currency):
         return Task(
-            description=(f"Search for flights between {source} and {destination} only on {departureDateFromSource} for {numOfPerson} passangers under the budget of {budget} USD in minimum duration"),
+            description=(
+                    f"""
+                    Search for flights from {source} to {destination} on {departureDateFromSource} date 
+                    for {numOfPerson} number of person under the budget of {budget} {currency}.
+                    Find the best flight options considering price and timing.
+                    Return the flight details.
+                    """),
             expected_output=(
-                "List of flights deatils in json format with flight name, number of via stops, price and others"
+                "List of JSON formated flights details with flight name, arrival date and others details"
             ),
             agent=agent,
-            timeout = 30
+            output_file="flight_details.md" 
         ) 
     
-    def hotel_checking_task(self, agent, source, destination, departureDate, departureDateFromDest, numOfPerson, budget):
+    def hotel_checking_task(self, agent, destination, departureDateFromDest, numOfPerson, budget, currency, flight_task):
         return Task(
-            description=("Search hotels on given {destination} city, for {departureDate} departure date, for {numOfPerson} adults for trip plan,    Only return options that, when added with the flight cost, stay within {budget} USD."
-                        "based on flight arrival date at destination."),
+            description=(
+                f"""
+                    From the results of the previous flight search task, take each flight's arrival date at {destination}.
+                    For each of these arrival dates, search for hotels in {destination} for {numOfPerson} adults.
+                    The check-in date for the hotel search will be the flight's arrival date, and the check-out date will be {departureDateFromDest}.
+                    Stay within a budget of {budget} {currency}.
+                    Compile a list of suitable hotel options for each considered arrival date.
+                """),
             expected_output=(
-                "Return list of dict containing hotels information like name, price, cuurency and others. "
+                "A JSON object. Each key in this object should be a specific arrival date (from a flight). "
+                "The value for each key should be a list of dictionaries, where each dictionary contains hotel "
+                "information (name, price, currency, etc.) for hotels available for that arrival date and the specified check-out date."
             ),
             agent=agent,
-            timeout = 30
+            output_file="hotel_details.md",
+            context = [flight_task]
         )
 
     def activity_planning_task(self, agent, source, destination, departureDate, departureDateFromDest, numOfPerson, budget):
@@ -35,5 +50,6 @@ class TripTasks:
                 "Each day must include 'Morning', 'Afternoon', and optionally 'Evening' activities."
             ),
             agent=agent,
-            timeout=60
+            output_file="activity_plan_details.md",
+            context = [self.flight_checking_task]
         )
