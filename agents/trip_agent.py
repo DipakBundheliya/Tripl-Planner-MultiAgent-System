@@ -47,10 +47,11 @@ class TripAgents:
                 llm=self.llm,
                 role = "Local activity expert",
                 goal = "Use the search tool to find a {num_days}-day itinerary or list of local activities in {destination_city}"
-                    "Each day should include tourist-friendly things to do.",
+                    "starting from {arrival_date} to {departure_date}. Include a list of activities each day.",
                 backstory =(
-                    "You are a travel assistant that helps travelers make the most of their trip by discovering top-rated, "
-                    "interesting, and enjoyable local activities. You use a search tool to gather up-to-date itinerary ideas."
+                    "You are a well-informed travel assistant who specializes in creating local experiences "
+                    "based on up-to-date tourist recommendations. You only suggest fun, interesting, and "
+                    "relevant activities suitable for casual travelers."
                 ),
                 tools = [search_activities],
                 allow_delegation=False,

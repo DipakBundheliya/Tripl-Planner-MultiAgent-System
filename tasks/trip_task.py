@@ -39,17 +39,41 @@ class TripTasks:
             context = [flight_task]
         )
 
-    def activity_planning_task(self, agent, source, destination, departureDate, departureDateFromDest, numOfPerson, budget):
+    def activity_planning_task(self, agent, destination, departureDateFromDest, numOfPerson, budget, currency, flight_task):
         return Task(
-            description=(
-                "Use the search tool to find a 2-day itinerary or list of local activities in {destination}. "
-                "These should be popular, tourist-friendly places or experiences."
-            ),
+            description=( 
+                f"""
+                    From the results of the previous flight search task, take each flight's arrival date at {destination}.
+                    For each of these arrival dates, use activity plan search tool to plan a itinerary at {destination} for {numOfPerson} person.
+                    consider days from one day after arrival date to {departureDateFromDest} date. 
+                    Stay within a budget of {budget} {currency}.
+                    Each day must include 'Morning', 'Afternoon', and optionally 'Evening' activities.
+                    Consider num_days as the number of days from the arrival date to the departure date.
+                """),
             expected_output=(
-                "Return a JSON list where each item represents a day with a list of 2–4 activities in that city. "
-                "Each day must include 'Morning', 'Afternoon', and optionally 'Evening' activities."
-            ),
+                    "Return a list of JSON objects. Each object corresponds to one flight option and must have the following structure:\n"
+                    "[\n"
+                    "  {\n"
+                    "    'arrival_date': 'YYYY-MM-DD',\n"
+                    "    'itinerary': [\n"
+                    "      {\n"
+                    "        'day': 'Day 1',\n"
+                    "        'date': 'YYYY-MM-DD',\n"
+                    "        'activities': {\n"
+                    "          'Morning': '...activity...',\n"
+                    "          'Afternoon': '...activity...',\n"
+                    "          'Evening': '...activity (optional)...'\n"
+                    "        }\n"
+                    "      },\n"
+                    "      ... (repeat for each day)\n"
+                    "    ]\n"
+                    "  },\n"
+                    "  ... (repeat for other flight options)\n"
+                    "]\n\n"
+                    "Make sure each 'itinerary' list starts from one day after the arrival date and ends one day before the user's departure date.\n"
+                    "If multiple flights have the same arrival_date, generate the itinerary only once for that date and do not repeat it in the output."
+                ),
             agent=agent,
             output_file="activity_plan_details.md",
-            context = [self.flight_checking_task]
+            context = [flight_task]
         )

@@ -308,10 +308,12 @@ def search_activities(num_days : int, destination: str, arrivalDate: str, depart
 
 if __name__ == "__main__":
    
-   # check flight search tool
+   
+#  check flight search tool
 #    response = search_flights("Goa", "London", (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d"), "1" )
    
-   #  check hotel details
-   response = search_hotels("London", datetime.now().strftime("%Y-%m-%d"), (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d"), "1")
-#    breakpoint()
+#  check hotel details
+#    response = search_hotels_dummy("London", datetime.now().strftime("%Y-%m-%d"), (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d"), "1")
+   
+   response = search_activities(2, "London", datetime.now().strftime("%Y-%m-%d"), (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d")) 
    print(response)
