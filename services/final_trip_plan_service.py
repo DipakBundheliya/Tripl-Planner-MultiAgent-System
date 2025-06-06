@@ -52,9 +52,19 @@ class TripCrew:
             flight_task = flight_task
         )
 
+        activity_plan_task = tasks.activity_planning_task(
+            agent = activity_planner_agent, 
+            destination= self.destination, 
+            departureDateFromDest= self.departureDateFromDest, 
+            numOfPerson= self.numOfPerson, 
+            budget= self.budget, 
+            currency= self.currency, 
+            flight_task= flight_task
+        )
+
         crew_one = Crew(
-            agents= [flight_searcher_agent, hotel_searcher_agent],
-            tasks= [flight_task, hotel_task],
+            agents= [flight_searcher_agent, activity_planner_agent],
+            tasks= [flight_task, activity_plan_task],
             verbose=True
         )
 
