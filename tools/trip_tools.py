@@ -3,6 +3,7 @@ import re
 import sys
 import time
 import requests 
+from typing import List
 # For getting crewai supported sqlite3
 import pysqlite3
 sys.modules['sqlite3'] = pysqlite3
@@ -293,27 +294,40 @@ def search_hotels_dummy(cityName: str, arrival_date: str, departure_date: str, a
 @tool("activity plan search")
 def search_activities(num_days : int, destination: str, arrivalDate: str, departureDate: str):
     """
-    Search for activities or travel itinerary in a destination city.
+    Suggests a list of must-do activities in the destination city during the trip.
 
-    parameters:
-    - num_days: Number of days for which user wants to do activities
-    - destination (str): The city name, e.g., "London", "Bangkok".
-    - arrivalDate (str): The date when user will arrive at the destination
-    - departureDate (str): The date when user will leave the destination
+    Parameters:
+    - num_days: Number of trip days.
+    - destination: City name (e.g., "London").
+    - arrival_date: Start date of the trip.
+    - departure_date: End date of the trip.
 
-    Returns : list of dict containing activities details.
-    """
-    search_prompt = f"Best {num_days}-day travel itinerary or local tourist activities in {destination} between {arrivalDate} and {departureDate}"
+    Returns:
+    - Formatted string containing activity ideas.
+    """ 
+    print("entering in search activities tool") 
+    search_prompt = (
+        f"Top tourist activities in {destination} during a {num_days}-day trip "
+        f"from {arrivalDate} to {departureDate}. List specific names of attractions, landmarks, events, or local experiences."
+    )
+
     return DuckDuckGoSearchRun().run(search_prompt)
 
+    # return [
+        # {"name": "Big Ben & Parliament Tour", "cost_eur": 40, "duration_hours": 2},
+        # {"name": "London Eye Ticket", "cost_eur": 35, "duration_hours": 1},
+        # {"name": "Thames River Cruise", "cost_eur": 25, "duration_hours": 1.5},
+        # {"name": "British Museum Guided Tour", "cost_eur": 20, "duration_hours": 2}
+    # ]
+ 
 if __name__ == "__main__":
-   
-   
-#  check flight search tool
+
+#    check flight search tool
 #    response = search_flights("Goa", "London", (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d"), "1" )
-   
-#  check hotel details
+
+#    check hotel details
 #    response = search_hotels_dummy("London", datetime.now().strftime("%Y-%m-%d"), (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d"), "1")
-   
-   response = search_activities(2, "London", datetime.now().strftime("%Y-%m-%d"), (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d")) 
+
+   response = search_activities(2, "London", datetime.now().strftime("%Y-%m-%d"), (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d"))
+    
    print(response)
