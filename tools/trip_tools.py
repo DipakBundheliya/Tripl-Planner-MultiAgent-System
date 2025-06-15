@@ -141,13 +141,9 @@ def search_flights(source : str, destination: str, departureDate: str , numOfPer
         except Exception as e:
             print(f"Error parsing offer: {e}")
 
-  except Exception as e:
-    error_result = {
-        "status": "error",
-        "message": str(e)
-    }
-    print("getting exception", error_result)
-    return str(error_result)
+  except Exception as e: 
+    print("Getting exception in flight search tool", str(e))
+    return {"status": "error", "message": str(e)}
 
   print(f"Total time taken to search and proceed flight search is {time.time() - start_time} seconds")
   return cleaned
@@ -166,130 +162,141 @@ def search_hotels_origional(cityName: str, arrival_date: str, departure_date: st
     Notes:
         Returns an empty list if no hotels are found for the specified city.
     """ 
-    start_time = time.time()
-    querystring = {"query":cityName}
+    try :
+        start_time = time.time()
+        querystring = {"query":cityName}
 
-    response = requests.get(destinationSearchUrl, headers=headers, params=querystring)
-    response_json = response.json()
+        response = requests.get(destinationSearchUrl, headers=headers, params=querystring)
+        response_json = response.json()
 
-    print("destination id is", response_json)
-    if "message" in response_json:
-        return {"status": "error", "message": response_json["message"]}
-    
-    dest_id_list = [location['dest_id'] for location in response_json.get('data', []) if location.get("search_type") == 'city']
+        print("destination id is", response_json)
+        if "message" in response_json:
+            return {"status": "error", "message": response_json["message"]}
+        
+        dest_id_list = [location['dest_id'] for location in response_json.get('data', []) if location.get("search_type") == 'city']
 
-    if not dest_id_list:
-        return []
+        if not dest_id_list:
+            return []
 
-    dest_id = dest_id_list[0]
+        dest_id = dest_id_list[0]
 
-    querystring = {"dest_id": dest_id, "search_type": "CITY", "arrival_date": arrival_date, "departure_date": departure_date, "adults": adults,
-                   "children_age": "0,17", "room_qty": "1", "page_number": "1", "units": "metric", "temperature_unit": "c", "languagecode": "en-us", }
-    response = requests.get(hotelSearchUrl, headers=headers, params=querystring)
+        querystring = {"dest_id": dest_id, "search_type": "CITY", "arrival_date": arrival_date, "departure_date": departure_date, "adults": adults,
+                    "children_age": "0,17", "room_qty": "1", "page_number": "1", "units": "metric", "temperature_unit": "c", "languagecode": "en-us", }
+        response = requests.get(hotelSearchUrl, headers=headers, params=querystring)
 
-    raw_response = response.json()
+        raw_response = response.json()
 
-    if "message" in raw_response:
-       return {"status": "error", "message": raw_response["message"]}
-    print("hotel search response is", raw_response)
+        if "message" in raw_response:
+            return {"status": "error", "message": raw_response["message"]}
+        print("hotel search response is", raw_response)
 
-    hotels_data = raw_response.get('data', {}).get('hotels', [])
-    if not hotels_data:
-        return []
-    
-    # Clean the hotel data
-    cleaned = []
+        hotels_data = raw_response.get('data', {}).get('hotels', [])
+        if not hotels_data:
+            return []
+        
+        # Clean the hotel data
+        cleaned = []
 
-    print(f"length of getting hotels are {len(hotels_data)}")
-    min_num_hotels = min(len(hotels_data), 5)
-    hotels_data = hotels_data[:min_num_hotels]
+        print(f"length of getting hotels are {len(hotels_data)}")
+        min_num_hotels = min(len(hotels_data), 5)
+        hotels_data = hotels_data[:min_num_hotels]
 
-    for hotel in hotels_data:
-        try:
-            prop = hotel.get('property', {})
-            price_info = prop.get('priceBreakdown', {}).get('grossPrice', {})
+        for hotel in hotels_data:
+            try:
+                prop = hotel.get('property', {})
+                price_info = prop.get('priceBreakdown', {}).get('grossPrice', {})
 
-            cleaned.append({
-                "name": prop.get("name"),
-                "hotel_price": round(price_info.get("value", 0), 2),
-                "currency": price_info.get("currency", "USD"),
-                "rating": prop.get("reviewScore"),
-                "rating_text": prop.get("reviewScoreWord"),
-                "review_count": prop.get("reviewCount"),
-                "stars": prop.get("propertyClass"),
-                "photo": prop.get("photoUrls", [None])[0],
-                "location": {
-                    "latitude": prop.get("latitude"),
-                    "longitude": prop.get("longitude")
-                },
-                "is_preferred": prop.get("isPreferred", False)
-            })
-        except Exception as e:
-            print(f"Hotel parse error: {e}")
+                cleaned.append({
+                    "name": prop.get("name"),
+                    "hotel_price": round(price_info.get("value", 0), 2),
+                    "currency": price_info.get("currency", "USD"),
+                    "rating": prop.get("reviewScore"),
+                    "rating_text": prop.get("reviewScoreWord"),
+                    "review_count": prop.get("reviewCount"),
+                    "stars": prop.get("propertyClass"),
+                    "photo": prop.get("photoUrls", [None])[0],
+                    "location": {
+                        "latitude": prop.get("latitude"),
+                        "longitude": prop.get("longitude")
+                    },
+                    "is_preferred": prop.get("isPreferred", False)
+                })
+            except Exception as e:
+                print(f"Hotel parse error: {e}")
+                continue
 
-    print(f"Total time taken to search and proceed flight search is {time.time() - start_time} seconds")
-    return cleaned
+        print(f"Total time taken to search and proceed flight search is {time.time() - start_time} seconds")
+        return cleaned
+
+    except Exception as e:
+        print("Getting exception in hotel search tool", str(e))
+        return {"status": "error", "message": str(e)}
 
 @tool("hotel search")
 def search_hotels_dummy(cityName: str, arrival_date: str, departure_date: str, adults: str):
     """
     Dummy function that returns static hotel data instead of calling the API.
     """
-    import time
-    start_time = time.time()
+    try :
+        import time
+        start_time = time.time()
 
-    print(f"Simulating hotel search for city: {cityName} from {arrival_date} to {departure_date} for {adults} adults.")
+        print(f"Simulating hotel search for city: {cityName} from {arrival_date} to {departure_date} for {adults} adults.")
 
-    dummy_hotels = [
-        {
-            "name": "Grand Palace Hotel",
-            "hotel_price": 125.50,
-            "currency": "USD",
-            "rating": 8.6,
-            "rating_text": "Excellent",
-            "review_count": 2345,
-            "stars": 5,
-            "photo": "https://example.com/photo1.jpg",
-            "location": {
-                "latitude": 28.6139,
-                "longitude": 77.2090
+        dummy_hotels = [
+            {
+                "name": "Grand Palace Hotel",
+                "hotel_price": 125.50,
+                "currency": "USD",
+                "rating": 8.6,
+                "rating_text": "Excellent",
+                "review_count": 2345,
+                "stars": 5,
+                "photo": "https://example.com/photo1.jpg",
+                "location": {
+                    "latitude": 28.6139,
+                    "longitude": 77.2090
+                },
+                "is_preferred": True
             },
-            "is_preferred": True
-        },
-        {
-            "name": "City Inn Express",
-            "hotel_price": 78.25,
-            "currency": "USD",
-            "rating": 7.2,
-            "rating_text": "Good",
-            "review_count": 986,
-            "stars": 3,
-            "photo": "https://example.com/photo2.jpg",
-            "location": {
-                "latitude": 28.6448,
-                "longitude": 77.2167
+            {
+                "name": "City Inn Express",
+                "hotel_price": 78.25,
+                "currency": "USD",
+                "rating": 7.2,
+                "rating_text": "Good",
+                "review_count": 986,
+                "stars": 3,
+                "photo": "https://example.com/photo2.jpg",
+                "location": {
+                    "latitude": 28.6448,
+                    "longitude": 77.2167
+                },
+                "is_preferred": False
             },
-            "is_preferred": False
-        },
-        {
-            "name": "Budget Stay Lodge",
-            "hotel_price": 49.99,
-            "currency": "USD",
-            "rating": 6.1,
-            "rating_text": "Fair",
-            "review_count": 403,
-            "stars": 2,
-            "photo": "https://example.com/photo3.jpg",
-            "location": {
-                "latitude": 28.5672,
-                "longitude": 77.2100
-            },
-            "is_preferred": False
-        }
-    ]
+            {
+                "name": "Budget Stay Lodge",
+                "hotel_price": 49.99,
+                "currency": "USD",
+                "rating": 6.1,
+                "rating_text": "Fair",
+                "review_count": 403,
+                "stars": 2,
+                "photo": "https://example.com/photo3.jpg",
+                "location": {
+                    "latitude": 28.5672,
+                    "longitude": 77.2100
+                },
+                "is_preferred": False
+            }
+        ]
 
-    print(f"Returning dummy hotel data. Total time: {time.time() - start_time:.2f} seconds")
-    return dummy_hotels
+        print(f"Returning dummy hotel data. Total time: {time.time() - start_time:.2f} seconds")
+        return dummy_hotels
+    
+    except Exception as e:
+        print("Getting exception in hotel search tool", str(e))
+        return {"status": "error", "message": str(e)}
 
 @tool("activity plan search")
 def search_activities(num_days : int, destination: str, arrivalDate: str, departureDate: str):
@@ -305,13 +312,17 @@ def search_activities(num_days : int, destination: str, arrivalDate: str, depart
     Returns:
     - Formatted string containing activity ideas.
     """ 
-    print("entering in search activities tool") 
-    search_prompt = (
-        f"Top tourist activities in {destination} during a {num_days}-day trip "
-        f"from {arrivalDate} to {departureDate}. List specific names of attractions, landmarks, events, or local experiences."
-    )
-
-    return DuckDuckGoSearchRun().run(search_prompt)
+    try :
+        print("entering in search activities tool") 
+        search_prompt = (
+            f"Top tourist activities in {destination} during a {num_days}-day trip "
+            f"from {arrivalDate} to {departureDate}. List specific names of attractions, landmarks, events, or local experiences."
+        )
+        return DuckDuckGoSearchRun().run(search_prompt)
+    
+    except Exception as e:
+        print("Getting exception in activity search tool", str(e))
+        return {"status": "error", "message": str(e)}
 
     # return [
         # {"name": "Big Ben & Parliament Tour", "cost_eur": 40, "duration_hours": 2},

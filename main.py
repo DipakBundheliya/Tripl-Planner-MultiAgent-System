@@ -5,6 +5,7 @@ from typing import Dict, Any
 import json
 from datetime import datetime, timedelta
 import uvicorn
+import time
 from services.final_trip_plan_service import TripCrew
 
 app = FastAPI(title="Travel Planning API", version="1.0.0")
@@ -44,6 +45,8 @@ async def create_travel_plan(request: TravelPlanRequest):
         # Here you would integrate with your TripCrew
         # For now, using the mock data structure you provided
          
+        start_time = time.time()
+        
         trip_crew = TripCrew(
             source=request.source,
             destination=request.destination,
@@ -141,6 +144,8 @@ async def create_travel_plan(request: TravelPlanRequest):
         #     ]
         # }
         
+        end_time = time.time()
+        print(f"Trip planning completed in {end_time - start_time:.2f} seconds")
         return TravelPlanResponse(
             status="success",
             message="Travel plan created successfully",

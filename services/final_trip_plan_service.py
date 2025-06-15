@@ -46,16 +46,18 @@ class TripCrew:
         hotel_task = tasks.hotel_checking_task(
             agent = hotel_searcher_agent,
             destination= self.destination,
+            departureDateFromSource= self.departureDateFromSource,
             departureDateFromDest= self.departureDateFromDest,
             numOfPerson= self.numOfPerson,
             budget= self.budget,
-            currency = self.currency,
-            flight_task = flight_task
+            currency= self.currency,
+            flight_task= flight_task
         )
 
         activity_plan_task = tasks.activity_planning_task(
-            agent = activity_planner_agent, 
-            destination= self.destination, 
+            agent= activity_planner_agent,
+            destination= self.destination,
+            departureDateFromSource= self.departureDateFromSource,
             departureDateFromDest= self.departureDateFromDest, 
             numOfPerson= self.numOfPerson, 
             budget= self.budget, 
@@ -85,7 +87,7 @@ if __name__ == '__main__':
     # source, destination, departureDateFromSource, departureDateFromDest, numOfPerson, budget, user_currency
     trip_crew1 = TripCrew(
         source="Ahemadabad",
-        destination="london",
+        destination="karachi",
         departureDateFromSource=(datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d"),
         departureDateFromDest=(datetime.now() + timedelta(days=10)).strftime("%Y-%m-%d"),
         numOfPerson='1',

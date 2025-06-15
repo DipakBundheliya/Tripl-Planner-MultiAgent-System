@@ -11,16 +11,31 @@ class TripTasks:
                     for {numOfPerson} number of person under the budget of {budget} {currency}.
                     Find the best flight options considering price and timing.
                     Return the flight details.
+
+                    CRITICAL: The output must be valid, parseable JSON with all brackets properly closed. 
+                    IMPORTANT: Return ONLY the JSON structure with no markdown formatting, no code blocks, no additional text.
+
+                    If the flight search tool gives any error in status, DO NOT hallucinate results respond with
+                    {{
+                        "error": "Return that error message from flight search tool"
+                    }}
                     """),
             expected_output=(
-                "List of JSON formated flights details with flight name, arrival date and others details"
-                "Convert from_airport and to_airport fields from IATA codes to full airport names."
+                """
+                List of JSON formated flights details with flight name, arrival date and others details
+                Convert from_airport and to_airport fields from IATA codes to full airport names.
+                If failure: Return
+                {
+                    "error": "<Actual message of that error from flight search tool>"
+                } 
+                Do not return markdown or code formatting. Return only JSON.
+                """
             ),
             agent=agent,
             output_file="flight_details.json" 
         ) 
     
-    def hotel_checking_task(self, agent, destination, departureDateFromDest, numOfPerson, budget, currency, flight_task):
+    def hotel_checking_task(self, agent, destination, departureDateFromSource, departureDateFromDest, numOfPerson, budget, currency, flight_task):
         return Task(
             description=(
                 f"""
@@ -29,24 +44,37 @@ class TripTasks:
                     The check-in date for the hotel search will be the flight's arrival date, and the check-out date will be {departureDateFromDest}.
                     Stay within a budget of {budget} {currency}.
                     Compile a list of suitable hotel options for each considered arrival date.
+                    If flight search result has any error consider {departureDateFromSource} as check-in date.
                 """),
             expected_output=(
-                "A JSON object. Each key in this object should be a specific arrival date (from a flight). "
-                "The value for each key should be a list of dictionaries, where each dictionary contains hotel "
-                "information (name, price, currency, etc.) for hotels available for that arrival date and the specified check-out date."
+                """
+                A JSON object. Each key in this object should be a specific arrival date (from a flight).
+                The value for each key should be a list of dictionaries, where each dictionary contains hotel
+                information (name, price, currency, etc.) for hotels available for that arrival date and the specified check-out date.
+
+                CRITICAL: The output must be valid, parseable JSON with all brackets properly closed.
+                IMPORTANT: Return ONLY the JSON structure with no markdown formatting, no code blocks, no additional text.
+
+                If hotel search tool returns an error, respond with:
+                {
+                    "error": "<Actual message of that error from hotel search tool>"
+                }
+
+                Do not hallucinate results. Do not use placeholders.
+                """
             ),
             agent=agent,
             output_file="hotel_details.json",
             context = [flight_task]
         )
 
-    def activity_planning_task(self, agent, destination, departureDateFromDest, numOfPerson, budget, currency, flight_task):
+    def activity_planning_task(self, agent, destination, departureDateFromSource, departureDateFromDest, numOfPerson, budget, currency, flight_task):
         return Task(
             description=( 
                  f"""
                 Your goal is to create activity plan for travelers going to {destination}.
 
-                STEP 1: First, examine the flight search results to extract the arrival_date. Calculate the number of days between arrival and {departureDateFromDest}.
+                STEP 1: First, examine the flight search results to extract the arrival_date , if flight search result has any error consider {departureDateFromSource} as arrival date. Calculate the number of days between arrival date and {departureDateFromDest} date.
 
                 STEP 2: Use the `activity plan search` tool ONCE with the full trip duration to get comprehensive activity suggestions for {destination}.
                 - Don't call the same tool multiple times with identical parameters
@@ -65,7 +93,6 @@ class TripTasks:
                 IMPORTANT: 
                 - Call the search tool only ONCE with the full trip details
                 - If search results are limited, create reasonable fallback activities based on common {destination} attractions
-                - Always end with "Final Answer:" followed by the JSON structure
                 """
             ),
             expected_output=(
@@ -90,6 +117,15 @@ class TripTasks:
                 },
                 ...
                 ]
+
+                If activity plan search tool returns an error, respond with:
+                {
+                    "error": "<Actual message of that error from activity plan search tool>"
+                }
+
+                Do not hallucinate results. Do not use placeholders.
+                CRITICAL: The output must be valid, parseable JSON with all brackets properly closed. 
+                IMPORTANT: Return ONLY the JSON structure with no markdown formatting, no code blocks, no additional text.
                 """
             ),
             agent=agent,
@@ -115,9 +151,7 @@ class TripTasks:
                 4. Validate the final JSON structure is complete and properly formatted
                 5. Ensure all brackets and braces are properly closed
                 6. Use actual data, not placeholder values
-                
-                CRITICAL: The output must be valid, parseable JSON with all brackets properly closed. 
-                IMPORTANT: Return ONLY the JSON structure with no markdown formatting, no code blocks, no additional text.
+
                 """ 
             ),
             expected_output=(
@@ -171,7 +205,9 @@ class TripTasks:
                             "latitude": number,
                             "longitude": number
                         },
-                        "is_preferred": boolean
+                        "is_preferred": boolean,
+                        "check_in_date": "YYYY-MM-DD",
+                        "check_out_date": "YYYY-MM-DD"
                     },
                     "activities": [
                         {
@@ -187,8 +223,23 @@ class TripTasks:
                 }
 
                 All fields must be filled using information from the three agents. Ensure dates are logically consistent. Return ONLY the JSON - no markdown, no explanations, no code blocks.
+
+                If any of the tasks return an error, then use the following format for that task's details:
+                {
+                    "flight_details": {
+                        "error": "<Actual message of that error from flight search tool>"
+                    },
+                    "hotel_details": {
+                        "error": "<Actual message of that error from hotel search tool>"
+                    },
+                    "activities": {
+                        "error": "<Actual message of that error from activity plan search tool>"
+                    }
+                } 
+                
+                CRITICAL: The output must be valid, parseable JSON with all brackets properly closed, strongly consider that do not add any keywords before and after parent brackets.
+                IMPORTANT: Return ONLY the JSON structure with no markdown formatting, no code blocks, no additional text.                
                 """
-                "FINAL CHECK: Ensure your JSON response ends with proper closing braces }} and is complete."
             ),
             agent=agent,
             output_file="final_trip_plan.json",
