@@ -1,11 +1,14 @@
+import re
+import ast
+import time
+import json
+from urllib import response
+import uvicorn
+from typing import Dict, Any
+from pydantic import BaseModel
+from datetime import datetime, timedelta
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Dict, Any
-import json
-from datetime import datetime, timedelta
-import uvicorn
-import time
 from services.final_trip_plan_service import TripCrew
 
 app = FastAPI(title="Travel Planning API", version="1.0.0")
@@ -41,10 +44,7 @@ async def root():
 
 @app.post("/create-travel-plan", response_model=TravelPlanResponse)
 async def create_travel_plan(request: TravelPlanRequest):
-    try:
-        # Here you would integrate with your TripCrew
-        # For now, using the mock data structure you provided
-         
+    try:   
         start_time = time.time()
         
         trip_crew = TripCrew(
@@ -57,8 +57,15 @@ async def create_travel_plan(request: TravelPlanRequest):
             user_currency=request.user_currency
         )
         response_one = trip_crew.run()  
-        try :
-            trip_data = json.loads(response_one.raw)
+        try : 
+            # Extract text from the first `{` and last `}` to ensure we get a valid JSON string
+            dict_str = re.search(r'\{.*\}', response_one.raw, re.DOTALL).group()
+            
+            if not dict_str:
+                raise HTTPException(status_code=500, detail=f"LLM does not contain json response")
+            
+            trip_data = json.loads(dict_str)
+
         except json.JSONDecodeError as e:
             print("Agent response\n", response_one.raw)
             raise HTTPException(status_code=500, detail=f"Error decoding JSON response: {str(e)}")

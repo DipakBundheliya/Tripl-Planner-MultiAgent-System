@@ -5,13 +5,13 @@ import os
 from dotenv import load_dotenv
 from crewai import Agent, LLM
 from langchain_groq import ChatGroq
-from tools.trip_tools import search_activities, search_flights, search_hotels_dummy 
+from tools.trip_tools import search_activities, search_flights, search_hotels_origional 
 
 load_dotenv(override=True)
 class TripAgents:
 
     def __init__(self): 
-        self.llm = LLM(model='gemini/gemini-2.5-flash-preview-05-20', api_key=os.environ["GEMINI_API_KEY"]) 
+        self.llm = LLM(model='gemini/gemini-2.5-flash-preview-05-20', api_key=os.environ["GOOGLE_API_KEY"]) 
         print("LLM initialized successfully:", self.llm)  
 
         try:
@@ -39,7 +39,7 @@ class TripAgents:
                 role = "Hotel search expert",
                 goal = "Find suitable hotels for the user's trip in given city based on given arrival dates and departure date for each flight",
                 backstory ="You are a hotel booking expert who knows how to find the best accomodations that match traveler's needs, budget, and location preferences using hotel search tool. You work well with arrival dates and departure dates provided by the flight search expert",
-                tools = [search_hotels_dummy],
+                tools = [search_hotels_origional],
                 allow_delegation=False,
                 verbose=True
             )

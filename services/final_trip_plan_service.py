@@ -69,7 +69,8 @@ class TripCrew:
             agent = final_plan_agent,
             flight_task = flight_task,
             hotel_task = hotel_task,
-            activity_plan_task = activity_plan_task 
+            activity_plan_task = activity_plan_task,
+            currency = self.currency 
         )
 
         crew_one = Crew(
@@ -86,13 +87,13 @@ class TripCrew:
 if __name__ == '__main__':
     # source, destination, departureDateFromSource, departureDateFromDest, numOfPerson, budget, user_currency
     trip_crew1 = TripCrew(
-        source="Ahemadabad",
-        destination="karachi",
+        source="Ahmedabad",
+        destination="Goa",
         departureDateFromSource=(datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d"),
         departureDateFromDest=(datetime.now() + timedelta(days=10)).strftime("%Y-%m-%d"),
         numOfPerson='1',
         budget='1000',
-        user_currency='EUR'
+        user_currency='INR'
     )
 
     response_one = trip_crew1.run() 

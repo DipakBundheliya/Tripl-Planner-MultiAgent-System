@@ -133,7 +133,7 @@ class TripTasks:
             context = [flight_task]
         )
 
-    def trip_finaliser_task(self, agent, flight_task, hotel_task, activity_plan_task):
+    def trip_finaliser_task(self, agent, flight_task, hotel_task, activity_plan_task, currency):
         return Task(
             description=(
                 f"""
@@ -148,9 +148,11 @@ class TripTasks:
                 1. Select the best flight based on earliest arrival time and most convenient schedule.
                 2. Choose a hotel available on the same arrival date with the best rating and amenities.
                 3. Use the matching activity plan that begins the day after arrival and ends one day before departure.
-                4. Validate the final JSON structure is complete and properly formatted
-                5. Ensure all brackets and braces are properly closed
-                6. Use actual data, not placeholder values
+                4. Flight cost is in euro convert it to user currency {currency}, mention that converted cost in the flight_details and hotel_details response and calculate flight, hotel and total expenses. 
+                Do no convert hotel cost , whatever hotel you select multiply number of days to its cost and mention that overall cost in response of hotel search.
+                5. Validate the final JSON structure is complete and properly formatted
+                6. Ensure all brackets and braces are properly closed
+                7. Use actual data, not placeholder values
 
                 """ 
             ),
@@ -220,6 +222,11 @@ class TripTasks:
                             }
                         }
                     ]
+                    "expense": {
+                        "flight_budget": number,
+                        "hotel_budget": number, 
+                        "total_budget": number
+                    }
                 }
 
                 All fields must be filled using information from the three agents. Ensure dates are logically consistent. Return ONLY the JSON - no markdown, no explanations, no code blocks.

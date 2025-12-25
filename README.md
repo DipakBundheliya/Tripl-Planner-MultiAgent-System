@@ -1,23 +1,61 @@
-Multi-Agent Travel Planning System
+# 🌍 Multi-Agent Travel Planning System
 
+### 🤖 Powered by CrewAI
 
-Overview :
-This project is a Multi-Agent System (MAS) built for automated travel planning using CrewAI. It utilizes four intelligent agents that work collaboratively to create an optimal, budget-friendly travel plan. Each agent is specialized in a different aspect of the travel planning process:
+---
 
-Flight Search Agent – Searches for flights based on user preferences.
+## 🧭 Overview
 
-Hotel Search Agent – Finds hotels based on user location and budget.
+This project is a **Multi-Agent System (MAS)** designed for **automated travel planning** using **CrewAI**. It uses **four intelligent agents**, each handling a part of the travel planning process.
 
-Activity Search Agent – Recommends activities based on destination and interests.
+### 🧠 Agents:
 
-Final Agent – Aggregates the results from all agents and creates a concrete, budget-friendly travel plan for the user.
+- ✈️ **Flight Search Agent**  
+  _Searches flights via the **Amadeus API**. Returns flight costs in **Euros (€)**._
 
+- 🏨 **Hotel Search Agent**  
+  _Searches hotels via **RapidAPI**. Returns hotel costs in **USD ($)**._
 
-Features :
-Flight Search: Finds flights based on destination, dates, and budget constraints.
+- 🎡 **Activity Search Agent**  
+  _Recommends activities using **DuckDuckGo Search Tool**._
 
-Hotel Search: Searches for hotels that fit the user's preferences, location, and price range.
+- 🧾 **Final Aggregation Agent**  
+  _Combines all results into a **budget-friendly travel plan**._
 
-Activity Search: Provides activities and events based on the destination.
+---
 
-Budget-Friendly Travel Plan: Combines all results into a personalized, cost-effective travel plan.
+## ✨ Features
+
+- 🔍 **Flight Search** – Based on source, destination, date, and budget  
+- 🛏️ **Hotel Search** – Based on location, preferences, and budget  
+- 🎯 **Activity Search** – Based on destination and interests  
+- 💸 **Budget Optimization** – Aggregates all data into a cost-effective plan
+
+---
+
+## 📦 Tech Stack
+
+- CrewAI  
+- Amadeus API  
+- Booking.com via RapidAPI  
+- DuckDuckGo Search Tool
+
+---
+
+## 🚀 Usage
+
+1. Clone the repository  
+2. Install dependencies  
+3. Set your API keys in `.env`  
+4. Run the app, using main.py file (uvicorn main:app --host 0.0.0.0 --port 8000 --reload)
+5. Input travel preferences and get a full plan!
+6. I have created react UI : You can inference working of this agent there
+---
+
+## 📝 Notes
+
+- Hotel costs are in USD, flight costs in EUR.
+- Be mindful of API quotas on RapidAPI and Amadeus.
+
+---
+
