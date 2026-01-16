@@ -1,0 +1,82 @@
+We can use below format in response for testing with frontend integration
+Mock response (replace with actual TripCrew response)
+
+trip_data = {
+    'flight_details': {
+        'id': '1', 
+        'flight_price': '318.59', 
+        'currency': request.user_currency, 
+        'airline': 'EMIRATES', 
+        'available_seats': 9, 
+        'total_duration_hour': 12, 
+        'stops': 1, 
+        'segments': [
+            {
+                'from_airport': 'AMD', 
+                'to_airport': 'DXB', 
+                'departure_time': f'{request.departure_date_from_source}T04:35:00', 
+                'arrival_time': f'{request.departure_date_from_source}T06:10:00', 
+                'flight_number': 'EK539', 
+                'carrier': 'EK', 
+                'duration_hour': 3, 
+                'stops': 0
+            },
+            {
+                'from_airport': 'DXB', 
+                'to_airport': 'LGW', 
+                'departure_time': f'{request.departure_date_from_source}T08:00:00', 
+                'arrival_time': f'{request.departure_date_from_source}T12:35:00', 
+                'flight_number': 'EK15', 
+                'carrier': 'EK', 
+                'duration_hour': 8, 
+                'stops': 0
+            }
+        ], 
+        'cabin_class': 'ECONOMY', 
+        'baggage': {'cabin_bag': 'N/A', 'checked_bag': '25 KG'}, 
+        'arrival_date': request.departure_date_from_source
+    }, 
+    'hotel_details': {
+        'name': 'Grand Palace Hotel', 
+        'hotel_price': 125.5, 
+        'currency': 'USD', 
+        'rating': 8.6, 
+        'rating_text': 'Excellent', 
+        'review_count': 2345, 
+        'stars': 5, 
+        'photo': 'https://example.com/photo1.jpg', 
+        'location': {'latitude': 28.6139, 'longitude': 77.209}, 
+        'is_preferred': True, 
+        'check_in_date': request.departure_date_from_source, 
+        'check_out_date': request.departure_date_from_dest
+    }, 
+    'activities': [
+        {
+            'day': 'Day 1', 
+            'date': request.departure_date_from_source, 
+            'activities': {
+                'Morning': {'title': 'Visit the National Gallery'}, 
+                'Afternoon': {'title': 'Explore street markets'}, 
+                'Evening': {'title': 'Enjoy dinner at a traditional English pub'}
+            }
+        },
+        {
+            'day': 'Day 2', 
+            'date': (datetime.strptime(request.departure_date_from_source, '%Y-%m-%d') + timedelta(days=1)).strftime('%Y-%m-%d'), 
+            'activities': {
+                'Morning': {'title': 'Attend the champagne and polo event'}, 
+                'Afternoon': {'title': 'Discover new cultural institutions'}, 
+                'Evening': {'title': 'Enjoy a West End musical'}
+            }
+        },
+        {
+            'day': 'Day 3',
+            'date': (datetime.strptime(request.departure_date_from_source, '%Y-%m-%d') + timedelta(days=2)).strftime('%Y-%m-%d'), 
+            'activities': {
+                'Morning': {'title': 'Visit the British Museum'}, 
+                'Afternoon': {'title': 'Take a stroll in Hyde Park'}, 
+                'Evening': {'title': 'Enjoy a cruise on the Thames'}
+            }
+        }
+    ]
+}

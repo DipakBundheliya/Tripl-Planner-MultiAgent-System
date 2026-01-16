@@ -31,6 +31,7 @@ class TripCrew:
         flight_searcher_agent = agents.flight_search_agent()
         hotel_searcher_agent = agents.hotel_search_agent()
         activity_planner_agent = agents.activity_plan_maker_agent()
+        final_plan_agent = agents.trip_finaliser_agent()
 
         flight_task = tasks.flight_checking_task(
             agent = flight_searcher_agent,
@@ -45,16 +46,18 @@ class TripCrew:
         hotel_task = tasks.hotel_checking_task(
             agent = hotel_searcher_agent,
             destination= self.destination,
+            departureDateFromSource= self.departureDateFromSource,
             departureDateFromDest= self.departureDateFromDest,
             numOfPerson= self.numOfPerson,
             budget= self.budget,
-            currency = self.currency,
-            flight_task = flight_task
+            currency= self.currency,
+            flight_task= flight_task
         )
 
         activity_plan_task = tasks.activity_planning_task(
-            agent = activity_planner_agent, 
-            destination= self.destination, 
+            agent= activity_planner_agent,
+            destination= self.destination,
+            departureDateFromSource= self.departureDateFromSource,
             departureDateFromDest= self.departureDateFromDest, 
             numOfPerson= self.numOfPerson, 
             budget= self.budget, 
@@ -62,9 +65,17 @@ class TripCrew:
             flight_task= flight_task
         )
 
+        final_plan_task = tasks.trip_finaliser_task(
+            agent = final_plan_agent,
+            flight_task = flight_task,
+            hotel_task = hotel_task,
+            activity_plan_task = activity_plan_task,
+            currency = self.currency 
+        )
+
         crew_one = Crew(
-            agents= [flight_searcher_agent, activity_planner_agent],
-            tasks= [flight_task, activity_plan_task],
+            agents= [flight_searcher_agent, hotel_searcher_agent, activity_planner_agent, final_plan_agent],
+            tasks= [flight_task, hotel_task, activity_plan_task, final_plan_task],
             verbose=True
         )
 
@@ -72,16 +83,18 @@ class TripCrew:
 
         return result
 
-    
-trip_crew1 = TripCrew(
-    "Ahemadabad",
-    "london",
-    (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d"),
-    (datetime.now() + timedelta(days=10)).strftime("%Y-%m-%d"),
-    '1',
-    '1000',
-    'EUR'
-)
 
-response_one = trip_crew1.run()
-print(response_one)
+if __name__ == '__main__':
+    # source, destination, departureDateFromSource, departureDateFromDest, numOfPerson, budget, user_currency
+    trip_crew1 = TripCrew(
+        source="Ahmedabad",
+        destination="Goa",
+        departureDateFromSource=(datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d"),
+        departureDateFromDest=(datetime.now() + timedelta(days=10)).strftime("%Y-%m-%d"),
+        numOfPerson='1',
+        budget='1000',
+        user_currency='INR'
+    )
+
+    response_one = trip_crew1.run() 
+    print(response_one.raw)  # json dictionary 

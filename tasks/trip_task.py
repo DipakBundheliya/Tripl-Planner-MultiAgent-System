@@ -11,15 +11,31 @@ class TripTasks:
                     for {numOfPerson} number of person under the budget of {budget} {currency}.
                     Find the best flight options considering price and timing.
                     Return the flight details.
+
+                    CRITICAL: The output must be valid, parseable JSON with all brackets properly closed. 
+                    IMPORTANT: Return ONLY the JSON structure with no markdown formatting, no code blocks, no additional text.
+
+                    If the flight search tool gives any error in status, DO NOT hallucinate results respond with
+                    {{
+                        "error": "Return that error message from flight search tool"
+                    }}
                     """),
             expected_output=(
-                "List of JSON formated flights details with flight name, arrival date and others details"
+                """
+                List of JSON formated flights details with flight name, arrival date and others details
+                Convert from_airport and to_airport fields from IATA codes to full airport names.
+                If failure: Return
+                {
+                    "error": "<Actual message of that error from flight search tool>"
+                } 
+                Do not return markdown or code formatting. Return only JSON.
+                """
             ),
             agent=agent,
-            output_file="flight_details.md" 
+            output_file="flight_details.json" 
         ) 
     
-    def hotel_checking_task(self, agent, destination, departureDateFromDest, numOfPerson, budget, currency, flight_task):
+    def hotel_checking_task(self, agent, destination, departureDateFromSource, departureDateFromDest, numOfPerson, budget, currency, flight_task):
         return Task(
             description=(
                 f"""
@@ -28,52 +44,211 @@ class TripTasks:
                     The check-in date for the hotel search will be the flight's arrival date, and the check-out date will be {departureDateFromDest}.
                     Stay within a budget of {budget} {currency}.
                     Compile a list of suitable hotel options for each considered arrival date.
+                    If flight search result has any error consider {departureDateFromSource} as check-in date.
                 """),
             expected_output=(
-                "A JSON object. Each key in this object should be a specific arrival date (from a flight). "
-                "The value for each key should be a list of dictionaries, where each dictionary contains hotel "
-                "information (name, price, currency, etc.) for hotels available for that arrival date and the specified check-out date."
+                """
+                A JSON object. Each key in this object should be a specific arrival date (from a flight).
+                The value for each key should be a list of dictionaries, where each dictionary contains hotel
+                information (name, price, currency, etc.) for hotels available for that arrival date and the specified check-out date.
+
+                CRITICAL: The output must be valid, parseable JSON with all brackets properly closed.
+                IMPORTANT: Return ONLY the JSON structure with no markdown formatting, no code blocks, no additional text.
+
+                If hotel search tool returns an error, respond with:
+                {
+                    "error": "<Actual message of that error from hotel search tool>"
+                }
+
+                Do not hallucinate results. Do not use placeholders.
+                """
             ),
             agent=agent,
-            output_file="hotel_details.md",
+            output_file="hotel_details.json",
             context = [flight_task]
         )
 
-    def activity_planning_task(self, agent, destination, departureDateFromDest, numOfPerson, budget, currency, flight_task):
+    def activity_planning_task(self, agent, destination, departureDateFromSource, departureDateFromDest, numOfPerson, budget, currency, flight_task):
         return Task(
             description=( 
-                f"""
-                    From the results of the previous flight search task, take each flight's arrival date at {destination}.
-                    For each of these arrival dates, use activity plan search tool to plan a itinerary at {destination} for {numOfPerson} person.
-                    consider days from one day after arrival date to {departureDateFromDest} date. 
-                    Stay within a budget of {budget} {currency}.
-                    Each day must include 'Morning', 'Afternoon', and optionally 'Evening' activities.
-                    Consider num_days as the number of days from the arrival date to the departure date.
-                """),
+                 f"""
+                Your goal is to create activity plan for travelers going to {destination}.
+
+                STEP 1: First, examine the flight search results to extract the arrival_date , if flight search result has any error consider {departureDateFromSource} as arrival date. Calculate the number of days between arrival date and {departureDateFromDest} date.
+
+                STEP 2: Use the `activity plan search` tool ONCE with the full trip duration to get comprehensive activity suggestions for {destination}.
+                - Don't call the same tool multiple times with identical parameters
+                - Focus on getting a broad range of activities that can be categorized into morning, afternoon, and evening options
+
+                STEP 3: From the search results, create a structured day-by-day itinerary:
+                - Start from the day after arrival date
+                - For each day until {departureDateFromDest}, assign:
+                  * One Morning activity (cultural sites, museums, markets)
+                  * One Afternoon activity (landmarks, parks, tours) 
+                  * One Evening activity (dining, entertainment, nightlife)
+                - Use the activities found in your search, distributing them logically across days
+
+                STEP 4: Your FINAL ANSWER must be in strict JSON format exactly as shown in expected_output.
+
+                IMPORTANT: 
+                - Call the search tool only ONCE with the full trip details
+                - If search results are limited, create reasonable fallback activities based on common {destination} attractions
+                """
+            ),
             expected_output=(
-                    "Return a list of JSON objects. Each object corresponds to one flight option and must have the following structure:\n"
-                    "[\n"
-                    "  {\n"
-                    "    'arrival_date': 'YYYY-MM-DD',\n"
-                    "    'itinerary': [\n"
-                    "      {\n"
-                    "        'day': 'Day 1',\n"
-                    "        'date': 'YYYY-MM-DD',\n"
-                    "        'activities': {\n"
-                    "          'Morning': '...activity...',\n"
-                    "          'Afternoon': '...activity...',\n"
-                    "          'Evening': '...activity (optional)...'\n"
-                    "        }\n"
-                    "      },\n"
-                    "      ... (repeat for each day)\n"
-                    "    ]\n"
-                    "  },\n"
-                    "  ... (repeat for other flight options)\n"
-                    "]\n\n"
-                    "Make sure each 'itinerary' list starts from one day after the arrival date and ends one day before the user's departure date.\n"
-                    "If multiple flights have the same arrival_date, generate the itinerary only once for that date and do not repeat it in the output."
-                ),
+                """
+                Return a list of JSON objects. Each object corresponds to one flight option with this structure:
+
+                [
+                {
+                    'arrival_date': 'YYYY-MM-DD',
+                    'itinerary': [
+                    {
+                        'day': 'Day 1',
+                        'date': 'YYYY-MM-DD',
+                        'activities': {
+                        'Morning': {'title': '...'},
+                        'Afternoon': {'title': '...'},
+                        'Evening': {'title': '...'}, 
+                        }, 
+                    },
+                    ...
+                    ], 
+                },
+                ...
+                ]
+
+                If activity plan search tool returns an error, respond with:
+                {
+                    "error": "<Actual message of that error from activity plan search tool>"
+                }
+
+                Do not hallucinate results. Do not use placeholders.
+                CRITICAL: The output must be valid, parseable JSON with all brackets properly closed. 
+                IMPORTANT: Return ONLY the JSON structure with no markdown formatting, no code blocks, no additional text.
+                """
+            ),
             agent=agent,
-            output_file="activity_plan_details.md",
+            output_file="activity_plan_details.json",
             context = [flight_task]
+        )
+
+    def trip_finaliser_task(self, agent, flight_task, hotel_task, activity_plan_task, currency):
+        return Task(
+            description=(
+                f"""
+                From the results of the previous 
+                - Flight search task
+                - Hotel search task
+                - Activity plan task
+
+                Finalise one optimal end-to-end itinerary.
+
+                Steps:
+                1. Select the best flight based on earliest arrival time and most convenient schedule.
+                2. Choose a hotel available on the same arrival date with the best rating and amenities.
+                3. Use the matching activity plan that begins the day after arrival and ends one day before departure.
+                4. Flight cost is in euro convert it to user currency {currency}, mention that converted cost in the flight_details and hotel_details response and calculate flight, hotel and total expenses. 
+                Do no convert hotel cost , whatever hotel you select multiply number of days to its cost and mention that overall cost in response of hotel search.
+                5. Validate the final JSON structure is complete and properly formatted
+                6. Ensure all brackets and braces are properly closed
+                7. Use actual data, not placeholder values
+
+                """ 
+            ),
+            expected_output=(
+                """
+                Return ONLY a complete, valid JSON object with ALL brackets and braces properly closed.
+                
+                VALIDATION CHECKLIST:
+                - All opening brackets { [ must have closing brackets } ]
+                - flight_price must be a number (e.g., 222.08), not a string
+                - hotel_price must be a number (e.g., 125.5)
+                - Use real data, not placeholder URLs or "N/A" values
+                - Ensure the JSON structure is complete and valid
+
+                {
+                    "flight_details": {
+                        "id": "string",
+                        "flight_price": number,
+                        "currency": "string", 
+                        "airline": "string",
+                        "available_seats": number,
+                        "total_duration_hour": number,
+                        "stops": number,
+                        "segments": [
+                            {
+                                "from_airport": "string",
+                                "to_airport": "string", 
+                                "departure_time": "YYYY-MM-DDTHH:MM:SS",
+                                "arrival_time": "YYYY-MM-DDTHH:MM:SS",
+                                "flight_number": "string",
+                                "carrier": "string",
+                                "duration_hour": number,
+                                "stops": number
+                            }
+                        ],
+                        "cabin_class": "string",
+                        "baggage": {
+                            "cabin_bag": "string",
+                            "checked_bag": "string"
+                        }
+                    },
+                    "hotel_details": {
+                        "name": "string",
+                        "hotel_price": number,
+                        "currency": "string",
+                        "rating": number,
+                        "rating_text": "string", 
+                        "review_count": number,
+                        "stars": number,
+                        "photo": "string",
+                        "location": {
+                            "latitude": number,
+                            "longitude": number
+                        },
+                        "is_preferred": boolean,
+                        "check_in_date": "YYYY-MM-DD",
+                        "check_out_date": "YYYY-MM-DD"
+                    },
+                    "activities": [
+                        {
+                            "day": "Day X",
+                            "date": "YYYY-MM-DD",
+                            "activities": {
+                                "Morning": {"title": "string"},
+                                "Afternoon": {"title": "string"},
+                                "Evening": {"title": "string"}
+                            }
+                        }
+                    ]
+                    "expense": {
+                        "flight_budget": number,
+                        "hotel_budget": number, 
+                        "total_budget": number
+                    }
+                }
+
+                All fields must be filled using information from the three agents. Ensure dates are logically consistent. Return ONLY the JSON - no markdown, no explanations, no code blocks.
+
+                If any of the tasks return an error, then use the following format for that task's details:
+                {
+                    "flight_details": {
+                        "error": "<Actual message of that error from flight search tool>"
+                    },
+                    "hotel_details": {
+                        "error": "<Actual message of that error from hotel search tool>"
+                    },
+                    "activities": {
+                        "error": "<Actual message of that error from activity plan search tool>"
+                    }
+                } 
+                
+                CRITICAL: The output must be valid, parseable JSON with all brackets properly closed, strongly consider that do not add any keywords before and after parent brackets.
+                IMPORTANT: Return ONLY the JSON structure with no markdown formatting, no code blocks, no additional text.                
+                """
+            ),
+            agent=agent,
+            output_file="final_trip_plan.json",
+            context=[flight_task, hotel_task, activity_plan_task]
         )
